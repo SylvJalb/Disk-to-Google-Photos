@@ -7,15 +7,22 @@ import shutil
 
 # Get the files directory, given in parameter
 INPUT_DIR = "./input/" + sys.argv[1]
-OUTPUT_DIR = "./outputs/Photos_processed/"
-OUTPUT_BAD_DATE_FILE = "./outputs/output_bad_date.csv"
-OUTPUT_BAD_FORMAT_FILE = "./outputs/output_bad_format.csv"
-OUTPUT_CSV_FILE = "./outputs/output.csv"
-OUTPUT_VIDEO_FILE = "./outputs/output_video.csv"
-OUTPUT_ERROR_FILE = "./outputs/output_error.csv"
+OUTPUT_DIR = "./outputs/"
+OUTPUT_FILES_DIR = os.path.join(OUTPUT_DIR, "preprocessed_files")
+OUTPUT_BAD_DATE_LOG = os.path.join(OUTPUT_DIR, "output_bad_date.csv")
+OUTPUT_BAD_FORMAT_LOG = os.path.join(OUTPUT_DIR, "output_bad_format.csv")
+OUTPUT_DATAS = os.path.join(OUTPUT_DIR, "output.csv")
+OUTPUT_VIDEO_LOG = os.path.join(OUTPUT_DIR, "output_video.csv")
+OUTPUT_ERROR_LOG = os.path.join(OUTPUT_DIR, "output_error.csv")
 # extensions compatibles google photos
 EXTENSIONS_PHOTO = ["BMP", "GIF", "HEIC", "ICO", "JPG", "PNG", "TIFF", "WEBP", "RAW", "JPEG"]
 EXTENSIONS_VIDEO = ["3GP", "3G2", "ASF", "AVI", "DIVX", "M2T", "M2TS", "M4V", "MKV", "MMV", "MOD", "MOV", "MP4", "MPG", "MTS", "TOD", "WMV"]
+
+# create output directory if not exist
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
+if not os.path.exists(OUTPUT_FILES_DIR):
+    os.makedirs(OUTPUT_FILES_DIR)
 
 def check_format(url_file):
     extension = url_file.split(".")[-1].upper()
@@ -53,20 +60,17 @@ def set_date_photo(url_file, url_new_file, last_date):
     year = date_creation.split(":")[0]
     # CHECK YEAR
     if year != annee:
-        print("\t\t\t/!\ BAD YEAR -> " + year + " != " + annee)
+        log_msg = ""
         # set date at the last date if it is set
         if last_date.split(":")[0] == annee:
             date_creation = last_date
-            print("\t\t\t\tSET TO LAST DATE")
+            log_msg = year + " != " + annee + "\t|\tSET TO LAST DATE"
         else:
             date_creation = annee + ":01:01 12:01:01"
-            print("\t\t\t\t/!\ NO LAST DATE")
-
-        # write in output_bad_date file
-        with open(OUTPUT_BAD_DATE_FILE, 'a') as f:
-            f.write(url_new_file + "  ->  " + date_creation + "\n")
-    
-    print("\t\t\tdate_creation: " + date_creation)
+            log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation
+        # write log
+        with open(OUTPUT_BAD_DATE_LOG, 'a') as f:
+            f.write(url_file + "\n" + url_new_file + "\n\t" + log_msg + "\n\n")
 
     exif_dict = piexif.load(url_file)
     # set date_creation
@@ -75,8 +79,6 @@ def set_date_photo(url_file, url_new_file, last_date):
     exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = date_creation
 
     return date_creation
-
-set_date_photo("./inputs/photos/.../name.jpg", OUTPUT_DIR, "")
 
 def save_file(path, album, description = ""):
     # check format
