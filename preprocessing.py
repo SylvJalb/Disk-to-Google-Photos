@@ -24,8 +24,8 @@ if not os.path.exists(OUTPUT_DIR):
 if not os.path.exists(OUTPUT_FILES_DIR):
     os.makedirs(OUTPUT_FILES_DIR)
 
-def check_format(url_file):
-    extension = url_file.split(".")[-1].upper()
+def check_format(path):
+    extension = path.split(".")[-1].upper()
     if extension in EXTENSIONS_PHOTO:
         return "photo"
     elif extension in EXTENSIONS_VIDEO:
@@ -33,12 +33,12 @@ def check_format(url_file):
     else:
         return "other"
 
-def set_date_photo(url_file, url_new_file, last_date):
-    annee = url_file.split(" - ")[0][-4:]
+def set_date_photo(path, new_path, last_date):
+    annee = path.split(" - ")[0][-4:]
     date_creation = None
 
     # open file
-    img = Image.open(url_file)
+    img = Image.open(path)
     
     # get date creation
     date_creation = img.info.get("date_original")
@@ -48,12 +48,12 @@ def set_date_photo(url_file, url_new_file, last_date):
             date_creation = img.info.get("date_created")
             if date_creation == "0000:00:00 00:00:00":
                 date_creation = None
-    if date_creation is None and os.path.getmtime(url_file) is not None:
-        date_creation = os.path.getmtime(url_file)
-        if date_creation is None and os.path.getctime(url_file) is not None:
-            date_creation = os.path.getctime(url_file)
-            if date_creation is None and os.path.getatime(url_file) is not None:
-                date_creation = os.path.getatime(url_file)
+    if date_creation is None and os.path.getmtime(path) is not None:
+        date_creation = os.path.getmtime(path)
+        if date_creation is None and os.path.getctime(path) is not None:
+            date_creation = os.path.getctime(path)
+            if date_creation is None and os.path.getatime(path) is not None:
+                date_creation = os.path.getatime(path)
         if date_creation is not None:
             date_creation = time.strftime("%Y:%m:%d %H:%M:%S", time.gmtime(date_creation))
     # get year of date_creation
@@ -70,9 +70,9 @@ def set_date_photo(url_file, url_new_file, last_date):
             log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation
         # write log
         with open(OUTPUT_BAD_DATE_LOG, 'a') as f:
-            f.write(url_file + "\n" + url_new_file + "\n\t" + log_msg + "\n\n")
+            f.write(path + "\n" + new_path + "\n\t" + log_msg + "\n\n")
 
-    exif_dict = piexif.load(url_file)
+    exif_dict = piexif.load(path)
     # set date_creation
     exif_dict["0th"][piexif.ImageIFD.DateTime] = date_creation
     exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = date_creation
@@ -80,11 +80,35 @@ def set_date_photo(url_file, url_new_file, last_date):
 
     return date_creation
 
-def save_file(path, album, description = ""):
+def save_file(path, album, id, last_date, description = ""):
+    date = None
+    new_file_name = str(id) + "." + path.split(".")[-1]
+    new_path = OUTPUT_FILES_DIR + "/" + new_file_name
     # check format
-    # check date
-    # save file
-    # write in output_csv file
+    format = check_format(path)
+    if format == "photo":
+        # check date
+        date = set_date_photo(path, new_path, last_date)
+    elif format == "video":
+        # write log
+        with open(OUTPUT_VIDEO_LOG, 'a') as f:
+            f.write(path + "\n\t" + album + "\n\t" + description + "\n\n")
+    if format == "other":
+        # write log
+        with open(OUTPUT_BAD_FORMAT_LOG, 'a') as f:
+            f.write(path + "\n\t" + album + "\n\t" + description + "\n\n")
+    else :
+        # copy file
+        try:
+            shutil.copy2(path, new_path)
+        except:
+            # write log
+            with open(OUTPUT_ERROR_LOG, 'a') as f:
+                f.write(path + "\n\t" + album + "\n\t" + description + "\n\n")
+        # write in OUTPUT_DATAS csv file
+        with open(OUTPUT_DATAS, 'a') as f:
+            f.write(str(id) + ";" + album + ";" + new_file_name + ";" + path + ";" + new_path + ";" + description + ";" + date)
+    return date
 
 albums = []
 # parcour du dossier Photos
