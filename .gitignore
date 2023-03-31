@@ -1,5 +1,3 @@
-code_secret*
-credentials.json
-ids.txt
+client_secret.json
 token*
 outputs/

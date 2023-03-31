@@ -21,4 +21,4 @@ I use the Google Photos API to :
 - Put your photos in a folder, and put the folder in the `inputs/` directory (look at the `inputs/example` folder for an example).
 - Run `python preprocessing.py exemple` to start the script (change `exemple` by the name of your folder).
 - You can check output logs if yout want to see errors.
-- Run `python upload.py` to start the upload in Google Photos.
+- Run `python upload.py exemple` to start the upload in Google Photos (change `exemple` by the name of your folder).

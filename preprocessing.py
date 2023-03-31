@@ -36,6 +36,9 @@ if os.path.exists(OUTPUT_VIDEO_LOG):
 if os.path.exists(PROCESS_LOG):
     os.remove(PROCESS_LOG)
 
+# Write header in OUTPUT_DATAS file
+with open(OUTPUT_DATAS, "a") as f:
+    f.write("path;album;description;date")
 
 #--------------------------------------------------------------#
 #---------------------------- FUNC ----------------------------#
