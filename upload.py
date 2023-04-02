@@ -31,7 +31,7 @@ NBR_FILES_PER_REQUEST = 40
 
 
 # READ DATAS
-df = pd.read_csv(OUTPUT_DATAS)
+df = pd.read_csv(OUTPUT_DATAS, sep=";")
 
 
 # PREPARE DATAS
@@ -89,37 +89,40 @@ def upload_files(df):
 
 # CREATE ALL ALBUMS
 # get all albums in df (only once)
-albums = df["album"].unique()
+albums_titles = df["album"].unique()
 # get all albums in google photos
 existing_albums = service.albums().list().execute()
-for album in albums:
+existing_albums = [{'title': album["title"], 'id': album["id"]} for album in existing_albums["albums"]]
+for album_title in albums_titles:
     # check if album exists
-    if album in existing_albums:
+    if album_title in [a["title"] for a in existing_albums]:
+        print("Album already exists: " + album_title)
         continue
+    print("Creating album: " + album_title)
     request_body = {
         'album': {
-            'title': album
+            'title': album_title
         }
     }
-    response = service.albums().create(body=request_body).execute()
-    print(response)
-    # TODO: save album id
+    new_album = service.albums().create(body=request_body).execute()
+    # save album id
+    existing_albums.append({'title': album_title, 'id': new_album["id"]})
 
-ddf = pd.DataFrame()
-for i in range(0, len(df), NBR_FILES_PER_REQUEST):
-    ddf = df.iloc[i:i+NBR_FILES_PER_REQUEST]
-    upload_files(ddf)
-    request_body  = {
-        "albumId": "**********************",
-        'newMediaItems': [
-            {
-                'description': row["description"],
-                'simpleMediaItem': {
-                    'uploadToken': row["response"].content.decode('utf-8')
-                }
-            } for index, row in ddf.iterrows()
-        ]
-    }
+# ddf = pd.DataFrame()
+# for i in range(0, len(df), NBR_FILES_PER_REQUEST):
+#     ddf = df.iloc[i:i+NBR_FILES_PER_REQUEST]
+#     upload_files(ddf)
+#     request_body  = {
+#         "albumId": "**********************",
+#         'newMediaItems': [
+#             {
+#                 'description': row["description"],
+#                 'simpleMediaItem': {
+#                     'uploadToken': row["response"].content.decode('utf-8')
+#                 }
+#             } for index, row in ddf.iterrows()
+#         ]
+#     }
 
-    upload_response = service.mediaItems().batchCreate(body=request_body).execute()
-    print(upload_response)
+#     upload_response = service.mediaItems().batchCreate(body=request_body).execute()
+#     print(upload_response)

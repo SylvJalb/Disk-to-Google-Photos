@@ -38,7 +38,7 @@ if os.path.exists(PROCESS_LOG):
 
 # Write header in OUTPUT_DATAS file
 with open(OUTPUT_DATAS, "a") as f:
-    f.write("path;album;description;date")
+    f.write("path;album;description;date\n")
 
 #--------------------------------------------------------------#
 #---------------------------- FUNC ----------------------------#
