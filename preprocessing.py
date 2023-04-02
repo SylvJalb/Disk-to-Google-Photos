@@ -1,7 +1,8 @@
 import os
 import sys
 import time
-from PIL import Image
+import filedate
+import datetime
 import piexif
 
 #--------------------------------------------------------------#
@@ -45,87 +46,69 @@ with open(OUTPUT_DATAS, "a") as f:
 #---------------------------- FUNC ----------------------------#
 #--------------------------------------------------------------#
 
-def check_format(path):
-    extension = path.split(".")[-1].upper()
-    if extension in EXTENSIONS_PHOTO:
-        return "photo"
-    elif extension in EXTENSIONS_VIDEO:
-        return "video"
-    else:
-        return "other"
-
-def set_date(path, last_date, album, isPhoto):
+def get_date(path, last_date, album):
     annee = album[:4]
-    date_creation = None
+    date_creation = os.path.getmtime(path)
 
-    if isPhoto:
-        # open file
-        img = Image.open(path)
-        
-        # get date creation
-        date_creation = img.info.get("date_original")
-        if date_creation is None or date_creation == "0000:00:00 00:00:00":
-            date_creation = img.info.get("date_digitized")
-            if date_creation is None or date_creation == "0000:00:00 00:00:00":
-                date_creation = img.info.get("date_created")
-                if date_creation == "0000:00:00 00:00:00":
-                    date_creation = None
-    
-    if date_creation is None and os.path.getmtime(path) is not None:
-        date_creation = os.path.getmtime(path)
-        if date_creation is None and os.path.getctime(path) is not None:
-            date_creation = os.path.getctime(path)
-            if date_creation is None and os.path.getatime(path) is not None:
-                date_creation = os.path.getatime(path)
-        if date_creation is not None:
-            date_creation = time.strftime("%Y:%m:%d %H:%M:%S", time.gmtime(date_creation))
+    if date_creation is not None:
+        date_creation = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(date_creation))
+
     # get year of date_creation
-    year = date_creation.split(":")[0]
+    year = date_creation.split("-")[0]
     # CHECK YEAR
     if year != annee:
         log_msg = ""
         # set date at the last date if it is set
-        if last_date and last_date.split(":")[0] == annee:
+        if last_date and last_date.split("-")[0] == annee:
             date_creation = last_date
             log_msg = year + " != " + annee + "\t|\tSET TO LAST DATE"
         else:
-            date_creation = annee + ":01:01 12:01:01"
+            date_creation = annee + "-01-01 23:01:01"
             log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation
         # write log
         with open(OUTPUT_BAD_DATE_LOG, 'a') as f:
             f.write(path + "\n\t" + log_msg + "\n\n")
 
-    if isPhoto:
-        exif_dict = piexif.load(path)
-        # set date_creation
-        exif_dict["0th"][piexif.ImageIFD.DateTime] = date_creation
-        exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = date_creation
-        exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = date_creation
-
     return date_creation
+
+def set_date(path, date):
+    date_creation = os.path.getmtime(path)
+    if date_creation is not None:
+        date_creation = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(date_creation))
+    
+    if date_creation != date:
+        new_date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        # set date
+        file_date = filedate.File(path)
+        file_date.set(
+            created = new_date.strftime("%Y.%m.%d %H:%M:%S"),
+            modified = new_date.strftime("%Y.%m.%d %H:%M:%S"),
+            accessed = new_date.strftime("%Y.%m.%d %H:%M:%S")
+        )
+        if path.split(".")[-1].upper() in EXTENSIONS_PHOTO:
+            exif_dict = piexif.load(path)
+            # set date_creation
+            exif_dict["0th"][piexif.ImageIFD.DateTime] = date_creation
+            exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = date_creation
+            exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = date_creation
+
 
 def save_file(path, album, last_date, description = ""):
     date = None
-    # check format
-    format = check_format(path)
-    if format == "photo":
+    extension = path.split(".")[-1].upper()
+    if extension in EXTENSIONS_PHOTO or extension in EXTENSIONS_VIDEO:
         # check date
-        date = set_date(path, last_date, album, True)
-    elif format == "video":
-        # check date
-        date = set_date(path, last_date, album, False)
-        # write log
-        with open(OUTPUT_VIDEO_LOG, 'a') as f:
-            f.write(path + "\n\t" + album + "\n\t" + description + "\n\n")
-    if format == "other":
-        # write log
-        with open(OUTPUT_BAD_FORMAT_LOG, 'a') as f:
-            f.write(path + "\n\t" + album + "\n\t" + description + "\n\n")
-    else :
+        date = get_date(path, last_date, album)
+        set_date(path, date)
         # write infos in the data file
         with open(OUTPUT_DATAS, 'a') as f:
             f.write(path + ";" + album + ";" + description + ";" + date + "\n")
-    return date
+        return date
+    else:
+        # write log
+        with open(OUTPUT_BAD_FORMAT_LOG, 'a') as f:
+            f.write(path + "\n\t" + album + "\n\t" + description + "\n\n")
+        return last_date
 
 
 #--------------------------------------------------------------#
@@ -140,7 +123,7 @@ for elt in os.listdir(INPUT_DIR):
 # order folder by number asc
 albums.sort(key=lambda x: int(x[:4]))
 
-last_date = "0000:00:00 00:00:00"
+last_date = "0000-00-00 00:00:00"
 
 for index, album in enumerate(albums):
     with open(PROCESS_LOG, 'a') as log:

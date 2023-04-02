@@ -118,6 +118,8 @@ for album in albums:
     print("Uploading files for album: " + album["title"])
     # get all files for this album
     album_df = df[df["album"] == album["title"]]
+    # order by date
+    album_df = album_df.sort_values(by=["date"])
     step_df = pd.DataFrame()
     for i in range(0, len(album_df), MAX_FILES_PER_STEP):
         step_df = album_df.iloc[i:i+MAX_FILES_PER_STEP]
@@ -137,7 +139,7 @@ for album in albums:
         }
 
         response = service.mediaItems().batchCreate(body=request_body).execute()
-        print(response)
+        #print(response)
         for result in response["newMediaItemResults"]:
             if result['status']['message'] != "Success":
                 print("Error while uploading file: " + result['mediaItem']['filename'])
