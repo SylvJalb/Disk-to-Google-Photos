@@ -47,7 +47,6 @@ df["description"] = df["description"].astype(str)
 
 # PREPARE UPLOAD
 service = Create_Service(CLIENT_SECRET_FILE, API_NAME, API_VERSION, SCOPES)
-print(dir(service))
 
 upload_url = 'https://photoslibrary.googleapis.com/v1/uploads'
 token = pickle.load(open('token_photoslibrary_v1.pickle', 'rb'))
@@ -82,6 +81,7 @@ def upload_file(row):
 def upload_files(df):
     for index, row in df.iterrows():
         upload_file(row)
+
 
 #--------------------------------------------------------------#
 #---------------------------- MAIN ----------------------------#
