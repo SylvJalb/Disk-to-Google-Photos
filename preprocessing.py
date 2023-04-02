@@ -15,6 +15,7 @@ OUTPUT_BAD_DATE_LOG = os.path.join(OUTPUT_DIR, "output_bad_date.log")
 OUTPUT_BAD_FORMAT_LOG = os.path.join(OUTPUT_DIR, "output_bad_format.log")
 OUTPUT_DATAS = os.path.join(OUTPUT_DIR, "output.csv")
 OUTPUT_VIDEO_LOG = os.path.join(OUTPUT_DIR, "output_video.log")
+OUTPUT_UPLOAD_LOG = os.path.join(OUTPUT_DIR, "output_upload.log")
 PROCESS_LOG = os.path.join(OUTPUT_DIR, "processing.log")
 # extensions compatibles google photos
 EXTENSIONS_PHOTO = ["BMP", "GIF", "HEIC", "ICO", "JPG", "PNG", "TIFF", "WEBP", "RAW", "JPEG"]

@@ -16,6 +16,7 @@ OUTPUT_BAD_DATE_LOG = os.path.join(OUTPUT_DIR, "output_bad_date.log")
 OUTPUT_BAD_FORMAT_LOG = os.path.join(OUTPUT_DIR, "output_bad_format.log")
 OUTPUT_DATAS = os.path.join(OUTPUT_DIR, "output.csv")
 OUTPUT_VIDEO_LOG = os.path.join(OUTPUT_DIR, "output_video.log")
+OUTPUT_UPLOAD_LOG = os.path.join(OUTPUT_DIR, "output_upload.log")
 PROCESS_LOG = os.path.join(OUTPUT_DIR, "processing.log")
 # extensions compatibles google photos
 EXTENSIONS_PHOTO = ["BMP", "GIF", "HEIC", "ICO", "JPG", "PNG", "TIFF", "WEBP", "RAW", "JPEG"]
@@ -27,7 +28,7 @@ API_NAME = 'photoslibrary'
 API_VERSION = 'v1'
 SCOPES =['https://www.googleapis.com/auth/photoslibrary']
 
-NBR_FILES_PER_REQUEST = 40
+MAX_FILES_PER_STEP = 40
 
 
 # READ DATAS
@@ -63,7 +64,7 @@ headers = {
 
 
 def upload_file(row):
-    image_file = "./" + row["url"]
+    image_file = "./" + row["path"]
     image_name = image_file.split("/")[-1]
 
     headers['X-Goog-Upload-File-Name'] = image_name
@@ -91,11 +92,13 @@ def upload_files(df):
 # get all albums in df (only once)
 albums_titles = df["album"].unique()
 # get all albums in google photos
-existing_albums = service.albums().list().execute()
-existing_albums = [{'title': album["title"], 'id': album["id"]} for album in existing_albums["albums"]]
+albums = service.albums().list().execute()
+albums = [{'title': album["title"], 'id': album["id"]} for album in albums["albums"]]
+# remove albums who not exists in albums_titles
+albums = [album for album in albums if album["title"] in albums_titles]
 for album_title in albums_titles:
     # check if album exists
-    if album_title in [a["title"] for a in existing_albums]:
+    if album_title in [a["title"] for a in albums]:
         print("Album already exists: " + album_title)
         continue
     print("Creating album: " + album_title)
@@ -105,24 +108,41 @@ for album_title in albums_titles:
         }
     }
     new_album = service.albums().create(body=request_body).execute()
-    # save album id
-    existing_albums.append({'title': album_title, 'id': new_album["id"]})
+    # save the new album locally
+    albums.append({'title': album_title, 'id': new_album["id"]})
 
-# ddf = pd.DataFrame()
-# for i in range(0, len(df), NBR_FILES_PER_REQUEST):
-#     ddf = df.iloc[i:i+NBR_FILES_PER_REQUEST]
-#     upload_files(ddf)
-#     request_body  = {
-#         "albumId": "**********************",
-#         'newMediaItems': [
-#             {
-#                 'description': row["description"],
-#                 'simpleMediaItem': {
-#                     'uploadToken': row["response"].content.decode('utf-8')
-#                 }
-#             } for index, row in ddf.iterrows()
-#         ]
-#     }
 
-#     upload_response = service.mediaItems().batchCreate(body=request_body).execute()
-#     print(upload_response)
+# UPLOAD FILES AND ADD TO ALBUMS
+album_df = pd.DataFrame()
+for album in albums:
+    print("Uploading files for album: " + album["title"])
+    # get all files for this album
+    album_df = df[df["album"] == album["title"]]
+    step_df = pd.DataFrame()
+    for i in range(0, len(album_df), MAX_FILES_PER_STEP):
+        step_df = album_df.iloc[i:i+MAX_FILES_PER_STEP]
+        # upload files
+        upload_files(step_df)
+        # add files to album
+        request_body  = {
+            "albumId": album["id"],
+            'newMediaItems': [
+                {
+                    'description': row["description"],
+                    'simpleMediaItem': {
+                        'uploadToken': row["response"].content.decode('utf-8')
+                    }
+                } for index, row in step_df.iterrows()
+            ]
+        }
+
+        response = service.mediaItems().batchCreate(body=request_body).execute()
+        print(response)
+        for result in response["newMediaItemResults"]:
+            if result['status']['message'] != "Success":
+                print("Error while uploading file: " + result['mediaItem']['filename'])
+                print("\t" + result['status']['message'])
+                # Write log in OUTPUT_UPLOAD_LOG file
+                with open(OUTPUT_UPLOAD_LOG, "a") as f:
+                    f.write("Error while uploading file: " + album + "/" + result['mediaItem']['filename'] + "\n")
+
