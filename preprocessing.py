@@ -13,6 +13,7 @@ import piexif
 INPUT_DIR = "./inputs/" + sys.argv[1]
 OUTPUT_DIR = "./outputs/"
 OUTPUT_BAD_DATE_LOG = os.path.join(OUTPUT_DIR, "output_bad_date.log")
+OUTPUT_BAD_DATE_DATAS = os.path.join(OUTPUT_DIR, "output_bad_date.csv")
 OUTPUT_BAD_FORMAT_LOG = os.path.join(OUTPUT_DIR, "output_bad_format.log")
 OUTPUT_DATAS = os.path.join(OUTPUT_DIR, "output.csv")
 OUTPUT_VIDEO_LOG = os.path.join(OUTPUT_DIR, "output_video.log")
@@ -38,9 +39,11 @@ if os.path.exists(OUTPUT_VIDEO_LOG):
 if os.path.exists(PROCESS_LOG):
     os.remove(PROCESS_LOG)
 
-# Write header in OUTPUT_DATAS file
+# Write headers
 with open(OUTPUT_DATAS, "a") as f:
     f.write("path;album;description;date\n")
+with open(OUTPUT_BAD_DATE_DATAS, "a") as f:
+    f.write("path;album;bad_date;new_date\n")
 
 #--------------------------------------------------------------#
 #---------------------------- FUNC ----------------------------#
@@ -52,6 +55,7 @@ def get_date(path, last_date, album):
 
     if date_creation is not None:
         date_creation = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(date_creation))
+    bad_date_creation = date_creation
 
     # get year of date_creation
     year = date_creation.split("-")[0]
@@ -61,13 +65,16 @@ def get_date(path, last_date, album):
         # set date at the last date if it is set
         if last_date and last_date.split("-")[0] == annee:
             date_creation = last_date
-            log_msg = year + " != " + annee + "\t|\tSET TO LAST DATE"
+            log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation + "(LAST DATE)"
         else:
             date_creation = annee + "-01-01 23:01:01"
             log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation
         # write log
         with open(OUTPUT_BAD_DATE_LOG, 'a') as f:
             f.write(path + "\n\t" + log_msg + "\n\n")
+        # write csv bad date
+        with open(OUTPUT_BAD_DATE_DATAS, 'a') as f:
+            f.write(path + ";" + album + ";" + bad_date_creation + ";" + date_creation + "\n")
 
     return date_creation
 

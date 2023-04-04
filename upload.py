@@ -17,6 +17,7 @@ OUTPUT_BAD_FORMAT_LOG = os.path.join(OUTPUT_DIR, "output_bad_format.log")
 OUTPUT_DATAS = os.path.join(OUTPUT_DIR, "output.csv")
 OUTPUT_VIDEO_LOG = os.path.join(OUTPUT_DIR, "output_video.log")
 OUTPUT_UPLOAD_LOG = os.path.join(OUTPUT_DIR, "output_upload.log")
+OUTPUT_UPLOAD_CSV = os.path.join(OUTPUT_DIR, "output_upload.csv")
 PROCESS_LOG = os.path.join(OUTPUT_DIR, "processing.log")
 # extensions compatibles google photos
 EXTENSIONS_PHOTO = ["BMP", "GIF", "HEIC", "ICO", "JPG", "PNG", "TIFF", "WEBP", "RAW", "JPEG"]
@@ -30,6 +31,15 @@ SCOPES =['https://www.googleapis.com/auth/photoslibrary']
 
 MAX_FILES_PER_STEP = 40
 
+# clear output files if exist
+if os.path.exists(OUTPUT_UPLOAD_LOG):
+    os.remove(OUTPUT_UPLOAD_LOG)
+if os.path.exists(OUTPUT_UPLOAD_CSV):
+    os.remove(OUTPUT_UPLOAD_CSV)
+
+# Write headers
+with open(OUTPUT_UPLOAD_CSV, "a") as f:
+    f.write("id;url;filename;album;creationTime\n")
 
 # READ DATAS
 df = pd.read_csv(OUTPUT_DATAS, sep=";")
@@ -147,4 +157,9 @@ for album in albums:
                 # Write log in OUTPUT_UPLOAD_LOG file
                 with open(OUTPUT_UPLOAD_LOG, "a") as f:
                     f.write("Error while uploading file: " + album + "/" + result['mediaItem']['filename'] + "\n")
+            else:
+                print("File uploaded: " + result['mediaItem']['filename'])
+                # Write log in OUTPUT_UPLOAD_LOG file
+                with open(OUTPUT_UPLOAD_CSV, "a") as f:
+                    f.write(result['mediaItem']['id'] + ";" + result['mediaItem']['productUrl'] + ";" + result['mediaItem']['filename'] + ";" + album["title"] + ";" + result['mediaItem']['mediaMetadata']['creationTime'] + "\n")
 
