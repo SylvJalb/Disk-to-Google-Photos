@@ -39,7 +39,7 @@ if os.path.exists(OUTPUT_UPLOAD_CSV):
 
 # Write headers
 with open(OUTPUT_UPLOAD_CSV, "a") as f:
-    f.write("id;url;filename;album;creationTime\n")
+    f.write("path;id;url;filename;album;creationTime\n")
 
 # READ DATAS
 df = pd.read_csv(OUTPUT_DATAS, sep=";")
@@ -158,8 +158,11 @@ for album in albums:
                 with open(OUTPUT_UPLOAD_LOG, "a") as f:
                     f.write("Error while uploading file: " + album + "/" + result['mediaItem']['filename'] + "\n")
             else:
-                print("File uploaded: " + result['mediaItem']['filename'])
+                path = ""
+                for index, row in step_df.iterrows():
+                    if row["response"].content.decode('utf-8') == result['uploadToken']:
+                        path = row["path"]
+                        break
                 # Write log in OUTPUT_UPLOAD_LOG file
                 with open(OUTPUT_UPLOAD_CSV, "a") as f:
-                    f.write(result['mediaItem']['id'] + ";" + result['mediaItem']['productUrl'] + ";" + result['mediaItem']['filename'] + ";" + album["title"] + ";" + result['mediaItem']['mediaMetadata']['creationTime'] + "\n")
-
+                    f.write( path + ";" + result['mediaItem']['id'] + ";" + result['mediaItem']['productUrl'] + ";" + result['mediaItem']['filename'] + ";" + album["title"] + ";" + result['mediaItem']['mediaMetadata']['creationTime'] + "\n")

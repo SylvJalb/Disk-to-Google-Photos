@@ -22,6 +22,7 @@ I use the Google Photos API to :
 - Run `python preprocessing.py exemple` to start the script (change `exemple` by the name of your folder).
 - You can check output logs if yout want to see errors.
 - Run `python upload.py exemple` to start the upload in Google Photos (change `exemple` by the name of your folder).
+- You can remove uploaded photos running `python clean.py exemple` (change `exemple` by the name of your folder).
 
 ## Rules
 - The main folder name (in the `inputs/` directory) have no importance.
