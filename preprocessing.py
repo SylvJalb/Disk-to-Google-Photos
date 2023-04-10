@@ -30,6 +30,8 @@ if not os.path.exists(OUTPUT_DIR):
 # clear output files if exist
 if os.path.exists(OUTPUT_BAD_DATE_LOG):
     os.remove(OUTPUT_BAD_DATE_LOG)
+if os.path.exists(OUTPUT_BAD_DATE_DATAS):
+    os.remove(OUTPUT_BAD_DATE_DATAS)
 if os.path.exists(OUTPUT_BAD_FORMAT_LOG):
     os.remove(OUTPUT_BAD_FORMAT_LOG)
 if os.path.exists(OUTPUT_DATAS):
@@ -55,19 +57,24 @@ def get_date(path, last_date, album):
 
     if date_creation is not None:
         date_creation = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(date_creation))
-    bad_date_creation = date_creation
 
     # get year of date_creation
     year = date_creation.split("-")[0]
     # CHECK YEAR
     if year != annee:
+        bad_date_creation = date_creation
         log_msg = ""
         # set date at the last date if it is set
         if last_date and last_date.split("-")[0] == annee:
             date_creation = last_date
             log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation + "(LAST DATE)"
         else:
-            date_creation = annee + "-01-01 23:01:01"
+            if album[4] == " ":
+                date_creation = annee + "-01-01 23:01:01"
+            elif album[4] == "-":
+                date_creation = album[:6] + "-01 23:01:01"
+            else:
+                print("ERROR: album name not valid -> " + album)
             log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation
         # write log
         with open(OUTPUT_BAD_DATE_LOG, 'a') as f:
@@ -86,18 +93,20 @@ def set_date(path, date):
     if date_creation != date:
         new_date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
         # set date
+        if path.split(".")[-1].upper() in EXTENSIONS_PHOTO:
+            exif_dict = piexif.load(path)
+            # set date_creation
+            exif_dict["0th"][piexif.ImageIFD.DateTime] = new_date.strftime("%Y:%m:%d %H:%M:%S")
+            exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = new_date.strftime("%Y:%m:%d %H:%M:%S")
+            exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = new_date.strftime("%Y:%m:%d %H:%M:%S")
+            # save exif
+            piexif.insert(piexif.dump(exif_dict), path)
         file_date = filedate.File(path)
         file_date.set(
             created = new_date.strftime("%Y.%m.%d %H:%M:%S"),
             modified = new_date.strftime("%Y.%m.%d %H:%M:%S"),
             accessed = new_date.strftime("%Y.%m.%d %H:%M:%S")
         )
-        if path.split(".")[-1].upper() in EXTENSIONS_PHOTO:
-            exif_dict = piexif.load(path)
-            # set date_creation
-            exif_dict["0th"][piexif.ImageIFD.DateTime] = date_creation
-            exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = date_creation
-            exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = date_creation
 
 
 def save_file(path, album, last_date, description = ""):
