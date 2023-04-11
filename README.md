@@ -30,3 +30,7 @@ I use the Google Photos API to :
     (the month `-MM` is optional).
 - The photos inside the albums folders will be uploaded to the corresponding album.
 - You can put subfolders inside the albums folders. The subfolders names will be the description of the photos inside.
+
+## Warning !
+- The script `preprocessing.py` can update metadata of your photos. It can also remove files if the format is not supported by Google Photos.
+- The script `clean.py` can remove files and folders from your given folder.

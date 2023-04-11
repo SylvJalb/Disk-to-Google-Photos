@@ -75,6 +75,7 @@ def get_date(path, last_date, album):
                 date_creation = album[:6] + "-01 23:01:01"
             else:
                 print("ERROR: album name not valid -> " + album)
+                sys.exit(1)
             log_msg = year + " != " + annee + "\t|\tSET TO " + date_creation
         # write log
         with open(OUTPUT_BAD_DATE_LOG, 'a') as f:
@@ -121,6 +122,8 @@ def save_file(path, album, last_date, description = ""):
             f.write(path + ";" + album + ";" + description + ";" + date + "\n")
         return date
     else:
+        # remove file
+        os.remove(path)
         # write log
         with open(OUTPUT_BAD_FORMAT_LOG, 'a') as f:
             f.write(path + "\n\t" + album + "\n\t" + description + "\n\n")

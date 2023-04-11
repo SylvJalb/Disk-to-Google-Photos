@@ -118,8 +118,16 @@ if not os.path.exists(OUTPUT_ALBUMS_CSV):
     # get all albums in df (only once)
     albums_titles = df["album"].unique()
     # get all albums in google photos
-    albums = service.albums().list().execute()
-    albums = [{'title': album["title"], 'id': album["id"]} for album in albums["albums"]]
+    albums_next = service.albums().list().execute()
+    albums = albums_next["albums"].copy()
+    while True:
+        if "nextPageToken" in albums_next:
+            albums_next = service.albums().list(pageToken=albums_next["nextPageToken"]).execute()
+            albums += albums_next["albums"]
+        else:
+            break
+        check_quota()
+    albums = [{'title': album["title"], 'id': album["id"]} for album in albums]
     # remove albums who not exists in albums_titles
     albums = [album for album in albums if album["title"] in albums_titles]
     for album_title in albums_titles:
@@ -207,3 +215,5 @@ for album in albums:
                 with open(OUTPUT_UPLOAD_CSV, "a") as f:
                     f.write( path + ";" + result['mediaItem']['id'] + ";" + result['mediaItem']['productUrl'] + ";" + (result['mediaItem']['filename'] if result['mediaItem'].get('filename') else "") + ";" + album["title"] + ";" + result['mediaItem']['mediaMetadata']['creationTime'] + "\n")
         check_quota()
+
+print("Done !")

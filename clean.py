@@ -17,16 +17,17 @@ OUTPUT_UPLOAD_CSV = os.path.join(OUTPUT_DIR, "output_upload.csv")
 #---------------------------- MAIN ----------------------------#
 #--------------------------------------------------------------#
 
-# Read the csv file
-df = pd.read_csv(OUTPUT_UPLOAD_CSV, sep=";")
+if os.path.exists(OUTPUT_UPLOAD_CSV):
+    # Read the csv file
+    df = pd.read_csv(OUTPUT_UPLOAD_CSV, sep=";")
 
-# Get the list of files to remove
-files_to_remove = df["path"].tolist()
+    # Get the list of files to remove
+    files_to_remove = df["path"].tolist()
 
-# Remove the files
-for path in files_to_remove:
-    if path != "" and os.path.exists(path):
-        os.remove(path)
+    # Remove the files
+    for path in files_to_remove:
+        if path != "" and os.path.exists(path):
+            os.remove(path)
 
 # Remove empty folders
 for root, dirs, files in os.walk(INPUT_DIR, topdown=False):
