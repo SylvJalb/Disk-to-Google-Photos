@@ -1,5 +1,5 @@
 # Disk-to-Google-Photos
-Import photos from your Disk to your Google Photo, retaining/creating as much Metadata as possible.
+Import photos from your Disk to your Google Photos, retaining/creating as much Metadata as possible.
 
 ## Why?
 I have a lot of photos on my Disk, and I want to upload them to Google Photos. I want to retain as much metadata as possible, and I want to be able to search for photos by location, date, etc.    
@@ -22,7 +22,10 @@ I use the Google Photos API to :
 - Run `python preprocessing.py exemple` to start the script (change `exemple` by the name of your folder).
 - You can check output logs if yout want to see errors.
 - Run `python upload.py exemple` to start the upload in Google Photos (change `exemple` by the name of your folder).
+
+## Tools
 - You can remove uploaded photos running `python clean.py exemple` (change `exemple` by the name of your folder).
+- You can look at all your albums in Google Photos running `python list_albums.py` it generate the file `./output/album_list.csv`.
 
 ## Rules
 - The main folder name (in the `inputs/` directory) have no importance.
