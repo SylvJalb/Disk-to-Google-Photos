@@ -23,6 +23,9 @@ PROCESS_LOG = os.path.join(OUTPUT_DIR, "processing.log")
 EXTENSIONS_PHOTO = ["BMP", "GIF", "HEIC", "ICO", "JPG", "PNG", "TIFF", "WEBP", "RAW", "JPEG"]
 EXTENSIONS_VIDEO = ["3GP", "3G2", "ASF", "AVI", "DIVX", "M2T", "M2TS", "M4V", "MKV", "MMV", "MOD", "MOV", "MP4", "MPG", "MTS", "TOD", "WMV"]
 
+# get the second argument if exist
+DO_UPDATES = (len(sys.argv) > 2 and sys.argv[2] == "update")
+
 # create output directory if not exist
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
@@ -116,7 +119,8 @@ def save_file(path, album, last_date, description = ""):
     if extension in EXTENSIONS_PHOTO or extension in EXTENSIONS_VIDEO:
         # check date
         date = get_date(path, last_date, album)
-        set_date(path, date)
+        if DO_UPDATES:
+            set_date(path, date)
         # write infos in the data file
         with open(OUTPUT_DATAS, 'a') as f:
             f.write(path + ";" + album + ";" + description + ";" + date + "\n")
